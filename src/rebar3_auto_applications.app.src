@@ -1,0 +1,11 @@
+{application, rebar3_auto_applications,
+ [{description, "Provider for automatically solving dependent"},
+  {vsn, "1.0.0"},
+  {registered, []},
+  {applications,[kernel,stdlib]},
+  {modules, []},
+  {maintainers, ["Hinagiku Soraoba"]},
+  {licenses, ["MIT"]},
+  {links, [{"GitHub","https://github.com/soranoba/rebar3_auto_applications"}]},
+  {env,[]}
+ ]}.
