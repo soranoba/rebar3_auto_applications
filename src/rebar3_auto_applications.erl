@@ -105,7 +105,7 @@ ordering_project_apps(State) ->
 remove_circular_reference_if_neseccary(ProjectApp, DependingApps, State) ->
     case proplists:get_value(remove_circulation, rebar_state:get(State, auto_app, []), false) of
         true ->
-            {RemoveApps, _} = lists:splitwith(fun(X) -> X =/= ProjectApp end, ordering_project_apps(State)),
+            {_, RemoveApps} = lists:splitwith(fun(X) -> X =/= ProjectApp end, ordering_project_apps(State)),
             DependingApps -- lists:map(fun(App) -> ?NAME(App) end, RemoveApps);
         false ->
             DependingApps
