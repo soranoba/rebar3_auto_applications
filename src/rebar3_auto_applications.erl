@@ -14,6 +14,8 @@
 %%----------------------------------------------------------------------------------------------------------------------
 -define(DEBUG(Format, Args), rebar_log:log(debug, "[~s:~p] "++Format++"~n", [?MODULE, ?LINE | Args])).
 
+-define(GET_OPT(Key, State, Default),
+        proplists:get_value(Key, rebar_state:get(State, auto_app, []), Default)).
 -define(NAME(X), binary_to_atom(rebar_app_info:name(X), utf8)).
 -define(DO(X),
         (fun() ->
@@ -107,13 +109,13 @@ ordering_project_apps(State) ->
       ProjectApp    :: rebar_app_info:t(),
       DependingApps :: [atom()].
 remove_circular_reference_if_neseccary(ProjectApp, DependingApps, State) ->
-    case proplists:get_value(remove_circulation, rebar_state:get(State, auto_app, []), false) of
+    case ?GET_OPT(remove_circulation, State, false) of
         true ->
             OrderingProjectApps = ordering_project_apps(State),
             ?DEBUG("project_app_dirs = ~s",
                    [string:join([rebar_app_info:dir(App) || App <- OrderingProjectApps], ",")]),
             {_, RemoveApps} = lists:splitwith(fun(X) -> X =/= ProjectApp end, OrderingProjectApps),
-            DependingApps -- lists:map(fun(App) -> ?NAME(App) end, RemoveApps);
+            (DependingApps -- lists:map(fun(App) -> ?NAME(App) end, RemoveApps)) -- [?GET_OPT(root_app, State, [])];
         false ->
             DependingApps
     end.
@@ -128,10 +130,7 @@ analyze_direct_depending_applications(App) ->
 %% @doc Return true, if the application is a specifed root application, otherwise false.
 -spec is_root_app(rebar_app_info:t(), rebar_state:t()) -> boolean().
 is_root_app(App, State) ->
-    case proplists:lookup(root_app, rebar_state:get(State, auto_app, [])) of
-        none             -> false;
-        {_, RootAppName} -> ?NAME(App) =:= RootAppName
-    end.
+    ?GET_OPT(root_app, State, []) =:= ?NAME(App).
 
 %% @doc Rewrite applications field of .app
 -spec rewrite_applications(rebar_app_info:t(), [atom()]) -> ok.
