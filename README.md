@@ -1,5 +1,7 @@
 rebar3_auto_applications
 ======
+[![hex.pm version](https://img.shields.io/hexpm/v/rebar3_auto_applications.svg)](https://hex.pm/packages/rebar3_auto_applications)
+
 Provider for automatically solving dependent.
 
 It is a plugin of [rebar3](https://github.com/erlang/rebar3).
