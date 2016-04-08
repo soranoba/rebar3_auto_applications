@@ -88,15 +88,19 @@ register_depending_applications(State) ->
 -spec ordering_project_apps(rebar_state:t()) -> [rebar_app_info:t()].
 ordering_project_apps(State) ->
     ProjectApps    = rebar_state:project_apps(State),
-    ProjectAppDirs = rebar_state:get(State, project_app_dirs),
+    ProjectAppDirs = lists:flatmap(fun filelib:wildcard/1, rebar_state:get(State, project_app_dirs)),
     DirAppLists    = [{rebar_app_info:dir(App), App} || App <- ProjectApps],
-    lists:foldr(fun(Dir, Acc) ->
-                        ProjectDir = filename:dirname(filename:absname(filename:join(Dir, "dummy"))),
-                        case proplists:lookup(ProjectDir, DirAppLists) of
-                            none   -> Acc;
-                            {_, V} -> [V | Acc]
-                        end
-                end, [], ProjectAppDirs).
+    Rev = lists:foldl(fun(Dir, Acc) ->
+                              ProjectDir = filename:dirname(filename:absname(filename:join(Dir, "dummy"))),
+                              case proplists:lookup(ProjectDir, DirAppLists) of
+                                  none   -> Acc;
+                                  {_, V} -> case lists:member(V, Acc) of
+                                                true  -> Acc;
+                                                false -> [V | Acc]
+                                            end
+                              end
+                      end, [], ProjectAppDirs),
+    lists:reverse(Rev).
 
 %% @doc Remove circular references in the project apps if necessary.
 -spec remove_circular_reference_if_neseccary(ProjectApp, DependingApps, rebar_state:t()) -> [atom()] when
@@ -105,7 +109,10 @@ ordering_project_apps(State) ->
 remove_circular_reference_if_neseccary(ProjectApp, DependingApps, State) ->
     case proplists:get_value(remove_circulation, rebar_state:get(State, auto_app, []), false) of
         true ->
-            {_, RemoveApps} = lists:splitwith(fun(X) -> X =/= ProjectApp end, ordering_project_apps(State)),
+            OrderingProjectApps = ordering_project_apps(State),
+            ?DEBUG("project_app_dirs = ~s",
+                   [string:join([rebar_app_info:dir(App) || App <- OrderingProjectApps], ",")]),
+            {_, RemoveApps} = lists:splitwith(fun(X) -> X =/= ProjectApp end, OrderingProjectApps),
             DependingApps -- lists:map(fun(App) -> ?NAME(App) end, RemoveApps);
         false ->
             DependingApps
